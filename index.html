@@ -1101,11 +1101,40 @@
                 ${assignment.createdByName ? ` • Posted by ${escapeHtml(assignment.createdByName)}` : ""}
               </div>
             </div>
+            <div class="assignment-delete-wrap"></div>
           </div>
 
           <div class="assignment-description">${escapeHtml(assignment.description || "")}</div>
           <div class="assignment-complete"></div>
         `;
+
+        const deleteWrap = item.querySelector(".assignment-delete-wrap");
+        const deleteAssignmentBtn = document.createElement("button");
+        deleteAssignmentBtn.type = "button";
+        deleteAssignmentBtn.className = "btn btn-danger";
+        deleteAssignmentBtn.textContent = "Delete Assignment";
+
+        deleteAssignmentBtn.addEventListener("click", async () => {
+          const confirmed = confirm(
+            `Delete the assignment "${assignment.name || "Untitled Assignment"}"?\n\nThis will remove it for everyone.`
+          );
+
+          if (!confirmed) return;
+
+          deleteAssignmentBtn.disabled = true;
+          deleteAssignmentBtn.textContent = "Deleting...";
+
+          try {
+            await deleteDoc(doc(db, "assignments", assignment.id));
+          } catch (error) {
+            console.error(error);
+            alert("Could not delete this assignment. Check your Firestore rules and connection.");
+            deleteAssignmentBtn.disabled = false;
+            deleteAssignmentBtn.textContent = "Delete Assignment";
+          }
+        });
+
+        deleteWrap.appendChild(deleteAssignmentBtn);
 
         const completionWrap = item.querySelector(".assignment-complete");
         const checkbox = document.createElement("input");
