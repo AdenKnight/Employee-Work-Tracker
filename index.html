@@ -631,6 +631,11 @@
                 <input id="assignmentDueDate" type="date" required />
               </div>
 
+              <div class="field">
+                <label for="assignmentSender">Assigned By / Instructor Name</label>
+                <input id="assignmentSender" type="text" maxlength="120" placeholder="e.g. Mr. Smith" />
+              </div>
+
               <div class="field full">
                 <label for="assignmentDescription">Description</label>
                 <textarea id="assignmentDescription" maxlength="3000" placeholder="Describe exactly what needs to be completed..." required></textarea>
@@ -735,6 +740,7 @@
     const assignmentForm = $("assignmentForm");
     const assignmentName = $("assignmentName");
     const assignmentDueDate = $("assignmentDueDate");
+    const assignmentSender = $("assignmentSender");
     const assignmentDescription = $("assignmentDescription");
     const assignmentList = $("assignmentList");
     const assignmentStatus = $("assignmentStatus");
@@ -1046,6 +1052,9 @@
     function clearAssignmentForm() {
       assignmentForm.reset();
       assignmentDueDate.value = getCurrentLocalDateString();
+      if (currentUser?.displayName) {
+        assignmentSender.value = currentUser.displayName;
+      }
       assignmentName.focus();
     }
 
@@ -1098,7 +1107,7 @@
               <div class="assignment-meta">
                 Due:
                 <span class="${dueClass}">${escapeHtml(formatDate(assignment.dueDate))}</span>
-                ${assignment.createdByName ? ` • Posted by ${escapeHtml(assignment.createdByName)}` : ""}
+                ${assignment.assignedBy ? ` • Assigned by ${escapeHtml(assignment.assignedBy)}` : (assignment.createdByName ? ` • Assigned by ${escapeHtml(assignment.createdByName)}` : "")}
               </div>
             </div>
             <div class="assignment-delete-wrap"></div>
@@ -1274,6 +1283,10 @@
         employeeName.value = user.displayName;
       }
 
+      if (!assignmentSender.value && user.displayName) {
+        assignmentSender.value = user.displayName;
+      }
+
       startFirestoreSync();
       startAssignmentSync();
     });
@@ -1289,6 +1302,7 @@
 
       const name = assignmentName.value.trim();
       const dueDate = assignmentDueDate.value;
+      const sender = assignmentSender.value.trim() || currentUser.displayName || currentUser.email || "Unknown";
       const details = assignmentDescription.value.trim();
 
       if (!name || !dueDate || !details) {
@@ -1304,6 +1318,7 @@
         await addDoc(collection(db, "assignments"), {
           name,
           dueDate,
+          assignedBy: sender,
           description: details,
           createdAt: serverTimestamp(),
           createdByUid: currentUser.uid,
