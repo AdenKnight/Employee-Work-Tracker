@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Job Work Tracker</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel2: #1f2937;
+      --border: #374151;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent2: #2563eb;
+      --danger: #dc2626;
+      --danger2: #b91c1c;
+      --success: #16a34a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      font-size: 30px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      border: 1px solid var(--border);
+      background: var(--panel2);
+      color: var(--text);
+      padding: 12px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 22px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .field {
+      min-width: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: #0b1220;
+      color: var(--text);
+      padding: 11px 12px;
+      border-radius: 9px;
+      font-size: 15px;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .btn {
+      border: 0;
+      padding: 11px 16px;
+      border-radius: 9px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover { background: var(--accent2); }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn-danger:hover { background: var(--danger2); }
+
+    .btn-secondary {
+      background: var(--panel2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .stat {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .stat .label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .stat .value {
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 900px;
+      background: var(--panel);
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--border);
+      padding: 11px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--panel2);
+      font-size: 13px;
+    }
+
+    td {
+      font-size: 14px;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 26px;
+    }
+
+    .hours {
+      font-weight: 800;
+    }
+
+    .week-controls {
+      display: flex;
+      align-items: end;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .week-controls .field {
+      width: 230px;
+    }
+
+    .notice {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .status {
+      min-height: 20px;
+      margin-top: 10px;
+      font-size: 14px;
+      color: #86efac;
+    }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 600px) {
+      .app { padding: 14px; }
+      .grid { grid-template-columns: 1fr; }
+      .summary { grid-template-columns: 1fr 1fr; }
+      .full { grid-column: auto; }
+    }
+
+
+    .hidden { display: none !important; }
+
+    .login-shell {
+      max-width: 520px;
+      margin: 70px auto;
+      padding: 24px;
+    }
+
+    .login-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      text-align: center;
+    }
+
+    .login-card h1 {
+      margin: 0 0 10px;
+    }
+
+    .login-card p {
+      color: var(--muted);
+      line-height: 1.5;
+      margin: 0 0 20px;
+    }
+
+    .google-btn {
+      width: 100%;
+      border: 0;
+      padding: 13px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 15px;
+      background: #ffffff;
+      color: #111827;
+    }
+
+    .google-btn:hover { background: #e5e7eb; }
+
+    .auth-error {
+      min-height: 22px;
+      margin-top: 14px;
+      color: #fca5a5;
+      font-size: 14px;
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .app-header h1 {
+      margin: 0;
+    }
+
+    .user-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .sync-status {
+      color: #86efac;
+      font-size: 13px;
+      margin-top: -8px;
+      margin-bottom: 14px;
+    }
+
+    @media print {
+      body { background: white; color: black; }
+      .tabs, .entry-card, .actions, .btn, .notice { display: none !important; }
+      .card, .stat, table {
+        background: white !important;
+        color: black !important;
+        border-color: #aaa !important;
+      }
+      th, td { border-color: #aaa !important; color: black !important; }
+    }
+  </style>
+</head>
+<body>
+  <div id="loginView" class="login-shell">
+    <div class="login-card">
+      <h1>Job Work Tracker</h1>
+      <p>Sign in with your Google account to access the shared employee work log.</p>
+      <button id="googleSignInBtn" class="google-btn" type="button">Sign in with Google</button>
+      <div id="authError" class="auth-error" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <div class="app hidden" id="trackerApp">
+    <div class="app-header">
+      <h1>Job Work Tracker</h1>
+      <div class="user-box">
+        <span id="signedInUser"></span>
+        <button id="signOutBtn" class="btn btn-secondary" type="button">Sign Out</button>
+      </div>
+    </div>
+    <div id="syncStatus" class="sync-status">Connecting to shared database...</div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="work-log">Work Log</button>
+      <button class="tab-btn" data-tab="crew-hours">Weekly Crew Hours</button>
+    </div>
+
+    <section id="work-log" class="tab-panel active">
+      <div class="card entry-card">
+        <h2>Add Work Entry</h2>
+
+        <form id="workForm">
+          <div class="grid">
+            <div class="field">
+              <label for="employeeName">Employee Name</label>
+              <input id="employeeName" type="text" placeholder="e.g. John Smith" required />
+            </div>
+
+            <div class="field">
+              <label for="workDate">Date Worked</label>
+              <input id="workDate" type="date" required />
+            </div>
+
+            <div class="field">
+              <label for="startTime">Start Time</label>
+              <input id="startTime" type="time" />
+            </div>
+
+            <div class="field">
+              <label for="endTime">End Time</label>
+              <input id="endTime" type="time" />
+            </div>
+
+            <div class="field">
+              <label for="manualHours">Hours Worked</label>
+              <input id="manualHours" type="number" min="0" max="24" step="0.25" placeholder="Auto or enter manually" />
+            </div>
+
+            <div class="field full">
+              <label for="description">What did they do that day?</label>
+              <textarea id="description" placeholder="Describe the work completed..."></textarea>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-primary" type="submit">Save Work Entry</button>
+            <button class="btn btn-secondary" type="button" id="clearFormBtn">Clear Form</button>
+          </div>
+
+          <div id="formStatus" class="status" aria-live="polite"></div>
+        </form>
+      </div>
+
+      <div class="summary">
+        <div class="stat">
+          <div class="label">Total Entries</div>
+          <div class="value" id="totalEntries">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Total Hours</div>
+          <div class="value" id="totalHours">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Employees</div>
+          <div class="value" id="totalEmployees">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Average Hours / Entry</div>
+          <div class="value" id="avgHours">0</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Saved Work Log</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Date</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Hours</th>
+                <th>Description</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="workLogBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="crew-hours" class="tab-panel">
+      <div class="card">
+        <h2>Weekly Crew Hours</h2>
+
+        <div class="week-controls">
+          <div class="field">
+            <label for="weekStart">Week Starting Monday</label>
+            <input id="weekStart" type="date" />
+          </div>
+          <button class="btn btn-secondary" id="currentWeekBtn" type="button">Current Week</button>
+          <button class="btn btn-secondary" id="printBtn" type="button">Print Weekly Hours</button>
+        </div>
+
+        <div class="notice">
+          This tab updates automatically from the Work Log. Enter each employee's hours only once in the Work Log.
+        </div>
+
+        <div class="summary" style="margin-top:16px;">
+          <div class="stat">
+            <div class="label">Employees This Week</div>
+            <div class="value" id="weekEmployeeCount">0</div>
+          </div>
+          <div class="stat">
+            <div class="label">Crew Hours</div>
+            <div class="value" id="weekCrewHours">0</div>
+          </div>
+          <div class="stat">
+            <div class="label">Crew Work Days</div>
+            <div class="value" id="weekWorkDays">0</div>
+          </div>
+          <div class="stat">
+            <div class="label">Week</div>
+            <div class="value" id="weekLabel" style="font-size:16px;">—</div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Mon</th>
+                <th>Tue</th>
+                <th>Wed</th>
+                <th>Thu</th>
+                <th>Fri</th>
+                <th>Sat</th>
+                <th>Sun</th>
+                <th>Days Worked</th>
+                <th>Total Hours</th>
+              </tr>
+            </thead>
+            <tbody id="crewBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      deleteDoc,
+      doc,
+      onSnapshot,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBfTiR-n2awUW8pL4xLoNMhYqoqA_pnScM",
+      authDomain: "work-tracker-bbeb1.firebaseapp.com",
+      projectId: "work-tracker-bbeb1",
+      storageBucket: "work-tracker-bbeb1.firebasestorage.app",
+      messagingSenderId: "882861361502",
+      appId: "1:882861361502:web:999b53acd856045b0067cf",
+      measurementId: "G-V71FP4NMW"
+    };
+
+    const firebaseApp = initializeApp(firebaseConfig);
+    const auth = getAuth(firebaseApp);
+    const db = getFirestore(firebaseApp);
+    const provider = new GoogleAuthProvider();
+
+    let entries = [];
+    let unsubscribeEntries = null;
+    let currentUser = null;
+
+    const $ = (id) => document.getElementById(id);
+
+    const loginView = $("loginView");
+    const trackerApp = $("trackerApp");
+    const googleSignInBtn = $("googleSignInBtn");
+    const signOutBtn = $("signOutBtn");
+    const authError = $("authError");
+    const signedInUser = $("signedInUser");
+    const syncStatus = $("syncStatus");
+
+    const workForm = $("workForm");
+    const employeeName = $("employeeName");
+    const workDate = $("workDate");
+    const startTime = $("startTime");
+    const endTime = $("endTime");
+    const manualHours = $("manualHours");
+    const description = $("description");
+    const workLogBody = $("workLogBody");
+    const crewBody = $("crewBody");
+    const weekStart = $("weekStart");
+    const formStatus = $("formStatus");
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function parseDateParts(dateStr) {
+      const [y, m, d] = dateStr.split("-").map(Number);
+      return { y, m, d };
+    }
+
+    function utcDateFromString(dateStr) {
+      const { y, m, d } = parseDateParts(dateStr);
+      return new Date(Date.UTC(y, m - 1, d));
+    }
+
+    function dateStringFromUTC(date) {
+      return date.toISOString().slice(0, 10);
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return "";
+      const d = utcDateFromString(dateStr);
+      return d.toLocaleDateString("en-US", {
+        timeZone: "UTC",
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      });
+    }
+
+    function formatShortDate(dateStr) {
+      const d = utcDateFromString(dateStr);
+      return d.toLocaleDateString("en-US", {
+        timeZone: "UTC",
+        month: "short",
+        day: "numeric"
+      });
+    }
+
+    function normalizeHours(n) {
+      const value = Number(n);
+      if (!Number.isFinite(value)) return 0;
+      return Math.round(value * 100) / 100;
+    }
+
+    function calculateHours(start, end) {
+      if (!start || !end) return null;
+
+      const [sh, sm] = start.split(":").map(Number);
+      const [eh, em] = end.split(":").map(Number);
+
+      let startMin = sh * 60 + sm;
+      let endMin = eh * 60 + em;
+
+      if (endMin < startMin) endMin += 24 * 60;
+      return normalizeHours((endMin - startMin) / 60);
+    }
+
+    function formatTime(value) {
+      if (!value) return "—";
+      const [h, m] = value.split(":").map(Number);
+      const suffix = h >= 12 ? "PM" : "AM";
+      const hour = h % 12 || 12;
+      return `${hour}:${String(m).padStart(2, "0")} ${suffix}`;
+    }
+
+    function mondayOf(dateStr) {
+      const d = utcDateFromString(dateStr);
+      const day = d.getUTCDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      d.setUTCDate(d.getUTCDate() + diff);
+      return dateStringFromUTC(d);
+    }
+
+    function addDays(dateStr, days) {
+      const d = utcDateFromString(dateStr);
+      d.setUTCDate(d.getUTCDate() + days);
+      return dateStringFromUTC(d);
+    }
+
+    function getCurrentLocalDateString() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, "0");
+      const d = String(now.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function setCurrentWeek() {
+      weekStart.value = mondayOf(getCurrentLocalDateString());
+      renderCrewHours();
+    }
+
+    function showStatus(message, isError = false) {
+      formStatus.style.color = isError ? "#fca5a5" : "#86efac";
+      formStatus.textContent = message;
+      setTimeout(() => {
+        if (formStatus.textContent === message) formStatus.textContent = "";
+      }, 2600);
+    }
+
+    function clearForm() {
+      workForm.reset();
+      workDate.value = getCurrentLocalDateString();
+
+      if (currentUser?.displayName) {
+        employeeName.value = currentUser.displayName;
+      }
+
+      employeeName.focus();
+    }
+
+    function renderSummary() {
+      const total = entries.reduce((sum, e) => sum + normalizeHours(e.hours), 0);
+      const uniqueEmployees = new Set(
+        entries
+          .map(e => String(e.employee || "").trim().toLowerCase())
+          .filter(Boolean)
+      );
+
+      $("totalEntries").textContent = entries.length;
+      $("totalHours").textContent = normalizeHours(total).toFixed(2);
+      $("totalEmployees").textContent = uniqueEmployees.size;
+      $("avgHours").textContent = entries.length
+        ? normalizeHours(total / entries.length).toFixed(2)
+        : "0.00";
+    }
+
+    function renderWorkLog() {
+      workLogBody.innerHTML = "";
+
+      if (entries.length === 0) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = '<td class="empty" colspan="7">No work entries yet.</td>';
+        workLogBody.appendChild(tr);
+        renderSummary();
+        return;
+      }
+
+      const sorted = [...entries].sort((a, b) => {
+        if (a.date === b.date) {
+          const aTime = a.createdAt?.seconds || 0;
+          const bTime = b.createdAt?.seconds || 0;
+          return bTime - aTime;
+        }
+        return String(b.date).localeCompare(String(a.date));
+      });
+
+      for (const entry of sorted) {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td>${escapeHtml(entry.employee)}</td>
+          <td>${escapeHtml(formatDate(entry.date))}</td>
+          <td>${escapeHtml(formatTime(entry.startTime))}</td>
+          <td>${escapeHtml(formatTime(entry.endTime))}</td>
+          <td class="hours">${normalizeHours(entry.hours).toFixed(2)}</td>
+          <td>${escapeHtml(entry.description || "")}</td>
+          <td></td>
+        `;
+
+        const actionCell = tr.lastElementChild;
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "btn btn-danger";
+        deleteBtn.textContent = "Delete";
+
+        deleteBtn.addEventListener("click", async () => {
+          const confirmed = confirm(
+            `Delete ${entry.employee}'s entry for ${formatDate(entry.date)}?`
+          );
+
+          if (!confirmed) return;
+
+          deleteBtn.disabled = true;
+          deleteBtn.textContent = "Deleting...";
+
+          try {
+            await deleteDoc(doc(db, "workEntries", entry.id));
+          } catch (error) {
+            console.error(error);
+            alert("Delete failed. Check your connection and Firestore rules.");
+            deleteBtn.disabled = false;
+            deleteBtn.textContent = "Delete";
+          }
+        });
+
+        actionCell.appendChild(deleteBtn);
+        workLogBody.appendChild(tr);
+      }
+
+      renderSummary();
+    }
+
+    function renderCrewHours() {
+      crewBody.innerHTML = "";
+
+      let monday = weekStart.value;
+      if (!monday) {
+        monday = mondayOf(getCurrentLocalDateString());
+        weekStart.value = monday;
+      } else {
+        monday = mondayOf(monday);
+        weekStart.value = monday;
+      }
+
+      const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
+      const sunday = weekDates[6];
+
+      $("weekLabel").textContent = `${formatShortDate(monday)} – ${formatShortDate(sunday)}`;
+
+      const weeklyEntries = entries.filter(e => e.date >= monday && e.date <= sunday);
+      const employees = new Map();
+
+      for (const entry of weeklyEntries) {
+        const rawName = String(entry.employee || "").trim();
+        if (!rawName) continue;
+
+        const key = rawName.toLowerCase();
+
+        if (!employees.has(key)) {
+          employees.set(key, {
+            name: rawName,
+            days: [0, 0, 0, 0, 0, 0, 0]
+          });
+        }
+
+        const emp = employees.get(key);
+        const dayIndex = weekDates.indexOf(entry.date);
+
+        if (dayIndex >= 0) {
+          emp.days[dayIndex] += normalizeHours(entry.hours);
+        }
+      }
+
+      const rows = [...employees.values()].sort((a, b) =>
+        a.name.localeCompare(b.name)
+      );
+
+      if (rows.length === 0) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = '<td class="empty" colspan="10">No work entries for this week.</td>';
+        crewBody.appendChild(tr);
+        $("weekEmployeeCount").textContent = "0";
+        $("weekCrewHours").textContent = "0.00";
+        $("weekWorkDays").textContent = "0";
+        return;
+      }
+
+      let crewHours = 0;
+      let crewWorkDays = 0;
+
+      for (const emp of rows) {
+        const total = emp.days.reduce((a, b) => a + b, 0);
+        const daysWorked = emp.days.filter(h => h > 0).length;
+
+        crewHours += total;
+        crewWorkDays += daysWorked;
+
+        const tr = document.createElement("tr");
+        const dayCells = emp.days.map(h =>
+          `<td>${h > 0 ? normalizeHours(h).toFixed(2) : "—"}</td>`
+        ).join("");
+
+        tr.innerHTML = `
+          <td><strong>${escapeHtml(emp.name)}</strong></td>
+          ${dayCells}
+          <td>${daysWorked}</td>
+          <td class="hours">${normalizeHours(total).toFixed(2)}</td>
+        `;
+
+        crewBody.appendChild(tr);
+      }
+
+      $("weekEmployeeCount").textContent = rows.length;
+      $("weekCrewHours").textContent = normalizeHours(crewHours).toFixed(2);
+      $("weekWorkDays").textContent = crewWorkDays;
+    }
+
+    function renderAll() {
+      renderWorkLog();
+      renderCrewHours();
+    }
+
+    function startFirestoreSync() {
+      if (unsubscribeEntries) unsubscribeEntries();
+
+      syncStatus.textContent = "Connecting to shared database...";
+
+      unsubscribeEntries = onSnapshot(
+        collection(db, "workEntries"),
+        (snapshot) => {
+          entries = snapshot.docs.map(d => ({
+            id: d.id,
+            ...d.data()
+          }));
+
+          syncStatus.textContent = "Shared database connected • updates sync automatically";
+          renderAll();
+        },
+        (error) => {
+          console.error(error);
+          syncStatus.textContent = "Could not load shared data. Check Firestore rules.";
+          entries = [];
+          renderAll();
+        }
+      );
+    }
+
+    googleSignInBtn.addEventListener("click", async () => {
+      authError.textContent = "";
+      googleSignInBtn.disabled = true;
+      googleSignInBtn.textContent = "Signing in...";
+
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (error) {
+        console.error(error);
+
+        if (error.code === "auth/unauthorized-domain") {
+          authError.textContent = "This website domain still needs to be authorized in Firebase.";
+        } else if (error.code === "auth/popup-closed-by-user") {
+          authError.textContent = "Sign-in window was closed before signing in.";
+        } else {
+          authError.textContent = "Google sign-in failed. Please try again.";
+        }
+      } finally {
+        googleSignInBtn.disabled = false;
+        googleSignInBtn.textContent = "Sign in with Google";
+      }
+    });
+
+    signOutBtn.addEventListener("click", async () => {
+      await signOut(auth);
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+
+      if (unsubscribeEntries) {
+        unsubscribeEntries();
+        unsubscribeEntries = null;
+      }
+
+      if (!user) {
+        entries = [];
+        loginView.classList.remove("hidden");
+        trackerApp.classList.add("hidden");
+        signedInUser.textContent = "";
+        renderAll();
+        return;
+      }
+
+      loginView.classList.add("hidden");
+      trackerApp.classList.remove("hidden");
+
+      signedInUser.textContent =
+        user.displayName || user.email || "Signed in";
+
+      if (!employeeName.value && user.displayName) {
+        employeeName.value = user.displayName;
+      }
+
+      startFirestoreSync();
+    });
+
+    workForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      if (!currentUser) {
+        showStatus("Please sign in first.", true);
+        return;
+      }
+
+      const name = employeeName.value.trim();
+      const date = workDate.value;
+
+      if (!name) {
+        alert("Please enter an employee name.");
+        employeeName.focus();
+        return;
+      }
+
+      if (!date) {
+        alert("Please choose the date worked.");
+        workDate.focus();
+        return;
+      }
+
+      let hours;
+
+      if (manualHours.value !== "") {
+        hours = normalizeHours(manualHours.value);
+      } else {
+        hours = calculateHours(startTime.value, endTime.value);
+      }
+
+      if (hours === null || !Number.isFinite(hours) || hours <= 0 || hours > 24) {
+        alert("Enter valid hours worked, or enter both a start and end time.");
+        manualHours.focus();
+        return;
+      }
+
+      const submitBtn = workForm.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Saving...";
+
+      try {
+        await addDoc(collection(db, "workEntries"), {
+          employee: name,
+          date,
+          startTime: startTime.value || "",
+          endTime: endTime.value || "",
+          hours,
+          description: description.value.trim(),
+          createdAt: serverTimestamp(),
+          createdByUid: currentUser.uid,
+          createdByEmail: currentUser.email || "",
+          createdByName: currentUser.displayName || ""
+        });
+
+        clearForm();
+        showStatus("Work entry saved to the shared database.");
+      } catch (error) {
+        console.error(error);
+        showStatus("Save failed. Check your connection and Firestore rules.", true);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Save Work Entry";
+      }
+    });
+
+    $("clearFormBtn").addEventListener("click", clearForm);
+
+    weekStart.addEventListener("change", () => {
+      if (weekStart.value) {
+        weekStart.value = mondayOf(weekStart.value);
+      }
+      renderCrewHours();
+    });
+
+    $("currentWeekBtn").addEventListener("click", setCurrentWeek);
+    $("printBtn").addEventListener("click", () => window.print());
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+
+        btn.classList.add("active");
+        const target = document.getElementById(btn.dataset.tab);
+        if (target) target.classList.add("active");
+
+        if (btn.dataset.tab === "crew-hours") {
+          renderCrewHours();
+        }
+      });
+    });
+
+    workDate.value = getCurrentLocalDateString();
+    setCurrentWeek();
+    renderAll();
+  </script>
+</body>
+</html>
