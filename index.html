@@ -627,14 +627,23 @@
               </div>
 
               <div class="field">
-                <label for="assignmentDueDate">Due Date</label>
-                <input id="assignmentDueDate" type="date" required />
-              </div>
+  <label for="assignmentDueDate">Due Date</label>
+  <input id="assignmentDueDate" type="date" required />
+</div>
 
-              <div class="field">
-                <label for="assignmentSender">Assigned By / Instructor Name</label>
-                <input id="assignmentSender" type="text" maxlength="120" placeholder="e.g. Mr. Smith" />
-              </div>
+<div class="field">
+  <label for="assignmentTarget">Assigned To</label>
+  <select id="assignmentTarget" required>
+    <option value="Aden">Aden</option>
+    <option value="Tatum">Tatum</option>
+    <option value="Both" selected>Both</option>
+  </select>
+</div>
+
+<div class="field">
+  <label for="assignmentSender">Assigned By / Instructor Name</label>
+  <input id="assignmentSender" type="text" maxlength="120" placeholder="e.g. Dr. Brauer" />
+</div>
 
               <div class="field full">
                 <label for="assignmentDescription">Description</label>
@@ -715,6 +724,7 @@
     let unsubscribeEntries = null;
     let unsubscribeAssignments = null;
     let currentUser = null;
+    let editingAssignmentId = null;
 
     const $ = (id) => document.getElementById(id);
 
@@ -739,8 +749,9 @@
     const formStatus = $("formStatus");
     const assignmentForm = $("assignmentForm");
     const assignmentName = $("assignmentName");
-    const assignmentDueDate = $("assignmentDueDate");
-    const assignmentSender = $("assignmentSender");
+const assignmentDueDate = $("assignmentDueDate");
+const assignmentTarget = $("assignmentTarget");
+const assignmentSender = $("assignmentSender");
     const assignmentDescription = $("assignmentDescription");
     const assignmentList = $("assignmentList");
     const assignmentStatus = $("assignmentStatus");
@@ -1049,14 +1060,43 @@
       }, 2600);
     }
 
-    function clearAssignmentForm() {
-      assignmentForm.reset();
-      assignmentDueDate.value = getCurrentLocalDateString();
-      if (currentUser?.displayName) {
-        assignmentSender.value = currentUser.displayName;
-      }
-      assignmentName.focus();
-    }
+    function resetAssignmentForm() {
+  editingAssignmentId = null;
+  assignmentForm.reset();
+
+  assignmentDueDate.value = getCurrentLocalDateString();
+  assignmentTarget.value = "Both";
+
+  if (currentUser?.displayName) {
+    assignmentSender.value = currentUser.displayName;
+  }
+
+  $("assignmentSubmitBtn").textContent = "Post Assignment";
+}
+
+function clearAssignmentForm() {
+  resetAssignmentForm();
+  assignmentName.focus();
+}
+
+function beginAssignmentEdit(assignment) {
+  editingAssignmentId = assignment.id;
+
+  assignmentName.value = assignment.name || "";
+  assignmentDueDate.value = assignment.dueDate || getCurrentLocalDateString();
+  assignmentTarget.value = assignment.assignedTo || "Both";
+  assignmentSender.value =
+    assignment.assignedBy ||
+    assignment.createdByName ||
+    currentUser?.displayName ||
+    "";
+
+  assignmentDescription.value = assignment.description || "";
+
+  $("assignmentSubmitBtn").textContent = "Save Changes";
+
+  assignmentName.focus();
+}
 
     function renderAssignments() {
       assignmentList.innerHTML = "";
@@ -1104,9 +1144,10 @@
           <div class="assignment-head">
             <div>
               <div class="assignment-title">${escapeHtml(assignment.name || "Untitled Assignment")}</div>
-              <div class="assignment-meta">
-                Due:
-                <span class="${dueClass}">${escapeHtml(formatDate(assignment.dueDate))}</span>
+             <div class="assignment-meta">
+  <strong>For: ${escapeHtml(assignment.assignedTo || "Both")}</strong>
+  • Due:
+  <span class="${dueClass}">${escapeHtml(formatDate(assignment.dueDate))}</span>
                 ${assignment.assignedBy ? ` • Assigned by ${escapeHtml(assignment.assignedBy)}` : (assignment.createdByName ? ` • Assigned by ${escapeHtml(assignment.createdByName)}` : "")}
               </div>
             </div>
@@ -1118,6 +1159,17 @@
         `;
 
         const deleteWrap = item.querySelector(".assignment-delete-wrap");
+        const editAssignmentBtn = document.createElement("button");
+editAssignmentBtn.type = "button";
+editAssignmentBtn.className = "btn btn-secondary";
+editAssignmentBtn.textContent = "Edit Assignment";
+editAssignmentBtn.style.marginRight = "8px";
+
+editAssignmentBtn.addEventListener("click", () => {
+  beginAssignmentEdit(assignment);
+});
+
+deleteWrap.appendChild(editAssignmentBtn);
         const deleteAssignmentBtn = document.createElement("button");
         deleteAssignmentBtn.type = "button";
         deleteAssignmentBtn.className = "btn btn-danger";
@@ -1158,19 +1210,53 @@
         checkbox.addEventListener("change", async () => {
           checkbox.disabled = true;
           try {
-            await updateDoc(doc(db, "assignments", assignment.id), {
-              completedBy: checkbox.checked
-                ? arrayUnion(currentUser.uid)
-                : arrayRemove(currentUser.uid)
-            });
-          } catch (error) {
-            console.error(error);
-            checkbox.checked = !checkbox.checked;
-            alert("Could not update this assignment. Check Firestore rules.");
-          } finally {
-            checkbox.disabled = false;
-          }
-        });
+  if (editingAssignmentId) {
+    await updateDoc(doc(db, "assignments", editingAssignmentId), {
+      name,
+      dueDate,
+      assignedTo,
+      assignedBy: sender,
+      description: details,
+      updatedAt: serverTimestamp(),
+      updatedByUid: currentUser.uid,
+      updatedByEmail: currentUser.email || "",
+      updatedByName: currentUser.displayName || ""
+    });
+
+    resetAssignmentForm();
+    showAssignmentStatus("Assignment updated.");
+  } else {
+    await addDoc(collection(db, "assignments"), {
+      name,
+      dueDate,
+      assignedTo,
+      assignedBy: sender,
+      description: details,
+      createdAt: serverTimestamp(),
+      createdByUid: currentUser.uid,
+      createdByEmail: currentUser.email || "",
+      createdByName: currentUser.displayName || "",
+      completedBy: []
+    });
+
+    resetAssignmentForm();
+    showAssignmentStatus("Assignment posted.");
+  }
+} catch (error) {
+  console.error(error);
+
+  showAssignmentStatus(
+    editingAssignmentId
+      ? "Could not update assignment."
+      : "Could not post assignment.",
+    true
+  );
+} finally {
+  submitBtn.disabled = false;
+  submitBtn.textContent = editingAssignmentId
+    ? "Save Changes"
+    : "Post Assignment";
+}
 
         completionWrap.appendChild(checkbox);
         completionWrap.appendChild(label);
@@ -1300,10 +1386,11 @@
         return;
       }
 
-      const name = assignmentName.value.trim();
-      const dueDate = assignmentDueDate.value;
-      const sender = assignmentSender.value.trim() || currentUser.displayName || currentUser.email || "Unknown";
-      const details = assignmentDescription.value.trim();
+     const name = assignmentName.value.trim();
+const dueDate = assignmentDueDate.value;
+const assignedTo = assignmentTarget.value;
+const sender = assignmentSender.value.trim() || currentUser.displayName || currentUser.email || "Unknown";
+const details = assignmentDescription.value.trim();
 
       if (!name || !dueDate || !details) {
         showAssignmentStatus("Complete the assignment name, due date, and description.", true);
@@ -1318,6 +1405,7 @@
         await addDoc(collection(db, "assignments"), {
           name,
           dueDate,
+          assignedTo,
           assignedBy: sender,
           description: details,
           createdAt: serverTimestamp(),
@@ -1439,6 +1527,7 @@
 
     workDate.value = getCurrentLocalDateString();
     assignmentDueDate.value = getCurrentLocalDateString();
+      assignmentTarget.value = "Both";
     setCurrentWeek();
     renderAll();
     renderAssignments();
