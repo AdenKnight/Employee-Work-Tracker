@@ -1208,55 +1208,22 @@ deleteWrap.appendChild(editAssignmentBtn);
         label.textContent = completed ? "Completed by me" : "Mark as completed";
 
         checkbox.addEventListener("change", async () => {
-          checkbox.disabled = true;
-          try {
-  if (editingAssignmentId) {
-    await updateDoc(doc(db, "assignments", editingAssignmentId), {
-      name,
-      dueDate,
-      assignedTo,
-      assignedBy: sender,
-      description: details,
-      updatedAt: serverTimestamp(),
-      updatedByUid: currentUser.uid,
-      updatedByEmail: currentUser.email || "",
-      updatedByName: currentUser.displayName || ""
-    });
+  checkbox.disabled = true;
 
-    resetAssignmentForm();
-    showAssignmentStatus("Assignment updated.");
-  } else {
-    await addDoc(collection(db, "assignments"), {
-      name,
-      dueDate,
-      assignedTo,
-      assignedBy: sender,
-      description: details,
-      createdAt: serverTimestamp(),
-      createdByUid: currentUser.uid,
-      createdByEmail: currentUser.email || "",
-      createdByName: currentUser.displayName || "",
-      completedBy: []
+  try {
+    await updateDoc(doc(db, "assignments", assignment.id), {
+      completedBy: checkbox.checked
+        ? arrayUnion(currentUser.uid)
+        : arrayRemove(currentUser.uid)
     });
-
-    resetAssignmentForm();
-    showAssignmentStatus("Assignment posted.");
+  } catch (error) {
+    console.error(error);
+    checkbox.checked = !checkbox.checked;
+    alert("Could not update this assignment. Check Firestore rules.");
+  } finally {
+    checkbox.disabled = false;
   }
-} catch (error) {
-  console.error(error);
-
-  showAssignmentStatus(
-    editingAssignmentId
-      ? "Could not update assignment."
-      : "Could not post assignment.",
-    true
-  );
-} finally {
-  submitBtn.disabled = false;
-  submitBtn.textContent = editingAssignmentId
-    ? "Save Changes"
-    : "Post Assignment";
-}
+});
 
         completionWrap.appendChild(checkbox);
         completionWrap.appendChild(label);
